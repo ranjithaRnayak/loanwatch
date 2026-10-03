@@ -1,7 +1,7 @@
 import streamlit as st
-from snowflake.snowpark.context import get_active_session
+from db import get_session
 
-session = get_active_session()
+session = get_session()
 
 FOOTER = "All data is synthetic. GST information is treated as an indicative external data feed. Built with CoCo CLI: see PROMPTS.md in the repo."
 
