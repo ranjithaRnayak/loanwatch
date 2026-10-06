@@ -3,6 +3,8 @@
 **Live demo (no login):** https://loanwatch-artemis.streamlit.app
 **Repo:** https://github.com/ranjithaRnayak/loanwatch
 
+Note: the public demo runs under the LW_JUDGE role, which is scoped by a region row-access policy and column masking, so its totals (about ₹10,168 Cr exposure, 38 open signals) are a governed subset of the full book shown in the deck (₹18,738 Cr, 52 signals). The difference is the governance layer doing its job. If the app shows "Zzzz", click "get this app back up"; it wakes in about 30 seconds.
+
 Three engineers with no banking background built a regulator-grade early-warning copilot in four evenings with CoCo CLI. LoanWatch ingests a synthetic 2,000-borrower commercial loan book from three source systems (core banking, loan management, collections), reconciles them into governed dynamic tables applying RBI's IRACP 2025 rules, detects 12 categories of early-warning signals including fund diversion, evergreening and GST mismatches, and lets a risk officer ask questions in plain English — with every answer citing the source rows, the exact RBI paragraph, and the regulatory deadline.
 
 ## Architecture
