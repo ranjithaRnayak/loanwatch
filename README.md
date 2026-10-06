@@ -1,5 +1,8 @@
 # LoanWatch
 
+**Live demo (no login):** https://loanwatch-artemis.streamlit.app
+**Repo:** https://github.com/ranjithaRnayak/loanwatch
+
 Three engineers with no banking background built a regulator-grade early-warning copilot in four evenings with CoCo CLI. LoanWatch ingests a synthetic 2,000-borrower commercial loan book from three source systems (core banking, loan management, collections), reconciles them into governed dynamic tables applying RBI's IRACP 2025 rules, detects 12 categories of early-warning signals including fund diversion, evergreening and GST mismatches, and lets a risk officer ask questions in plain English — with every answer citing the source rows, the exact RBI paragraph, and the regulatory deadline.
 
 ## Architecture
@@ -22,7 +25,7 @@ flowchart LR
     end
 
     subgraph REF["REF"]
-        PDF["4 RBI PDFs"]
+        PDF["6 regulatory docs"]
         PARSE["AI_PARSE_DOCUMENT"]
         CHUNKS[REG_CHUNKS]
         CS["Cortex Search\nREG_SEARCH"]
@@ -59,8 +62,8 @@ flowchart LR
 
 | Criterion | How LoanWatch satisfies it | Snowflake features |
 |-----------|---------------------------|-------------------|
-| **Use Cortex AI to solve a real business problem** | A risk officer asks "Why is Meera Traders flagged?" and gets 7 cited early-warning signals, the related-party graph, and a draft RFA note — in one conversation. | Cortex Agent, Cortex Analyst (semantic view + VQRs), Cortex Search (RAG), AI_COMPLETE, AI_PARSE_DOCUMENT |
-| **Demonstrate end-to-end data + AI pipeline** | Raw data from 3 source systems → governed dynamic tables (IRACP 2025 rules) → 12 EWS signal categories → AI-drafted regulatory paperwork. 4 RBI PDFs parsed, chunked, and indexed for RAG. | Dynamic tables, ANOMALY_DETECTION, tasks (DAG), AI_PARSE_DOCUMENT, Cortex Search |
+| **Use Cortex AI to solve a real business problem** | A risk officer asks "Why is Meera Traders flagged?" and gets 7 cited early-warning signals, the related-party graph, and a draft RFA note. The agent answers questions with evidence and clause references; the four regulatory drafts are generated from the Actions page by design, so a human initiates every document. | Cortex Agent, Cortex Analyst (semantic view + VQRs), Cortex Search (RAG), AI_COMPLETE, AI_PARSE_DOCUMENT |
+| **Demonstrate end-to-end data + AI pipeline** | Raw data from 3 source systems → governed dynamic tables (IRACP 2025 rules) → 12 EWS signal categories → AI-drafted regulatory paperwork. 6 regulatory documents (IRACP25, RSA25, FRM24, FRAUD16, KYC25, FIUIND) parsed, chunked into 641 chunks, and indexed for RAG. | Dynamic tables, ANOMALY_DETECTION, tasks (DAG), AI_PARSE_DOCUMENT, Cortex Search |
 | **Production-grade governance and security** | 7 masking policies (PAN, GSTIN, account numbers, names, DOB, DIN), 2 row-access policies (region entitlement, STR principal-officer only), role-based access (LW_JUDGE for evaluators). | Masking policies, row-access policies, RBAC, Streamlit in Snowflake |
 
 ## Demo questions
@@ -93,7 +96,7 @@ On 28 November 2025, the Reserve Bank of India consolidated over 9,000 circulars
 ## Roadmap
 
 - **Core-banking connectors.** Replace synthetic CSV loads with Openflow connectors to live CBS and LMS feeds.
-- **Full 42 EWS indicators.** Currently 12 of the 42 Annex II indicators are implemented; the remaining 30 follow the same pattern (reference table + view + signal merge).
+- **Full 42 EWS indicators.** 47 indicators in REF.EWS_INDICATORS: 12 computable from the 2016 Annex II list plus 4 LoanWatch indicators; the rest reference-only. The remaining indicators follow the same pattern (reference table + view + signal merge).
 - **Maker-checker approval on RFA notes.** Add a two-level approval workflow before an RFA note can be submitted to the fraud committee.
 - **ECL readiness for April 2027.** RBI's Expected Credit Loss framework takes effect April 2027. The PROVISION_MONTHLY view and rates table are designed to swap from incurred-loss to ECL with a config change.
 
@@ -112,7 +115,8 @@ Two evaluator accounts have been created with role `LW_JUDGE` (read-only access 
 | EVALUATOR2 | hack2skillevaluator@gmail.com | LW_JUDGE | LW_APP_XS |
 
 Passwords were communicated separately. The Streamlit app is at:
-`AI & ML → Streamlit → LoanWatch` (or search for `LOANWATCH_UI`).
+- **Snowflake:** `AI & ML → Streamlit → LoanWatch` (or search for `LOANWATCH_UI`)
+- **Public demo:** https://loanwatch-artemis.streamlit.app
 
 ## References
 
