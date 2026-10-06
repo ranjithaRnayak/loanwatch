@@ -1,0 +1,190 @@
+================================================================================
+Q2: Why is Meera Traders flagged?
+Tool: Analyst | VQR: true | Clauses: FRAUD16:AnnexII-9, FRAUD16:AnnexII-28, FRAUD16:AnnexII-36, FRAUD16:AnnexII-35, FRM24:3.3.1
+Query ID: 01c78db2-0204-df6f-0005-57520014a27a | Elapsed: 23.4s
+--------------------------------------------------------------------------------
+Meera Traders Pvt Ltd (B-P1) has **7 open early-warning signals** — 5 HIGH and 2 MEDIUM. The core story: GST-reported turnover is collapsing while cash-credit utilisation is pinned near the limit, large sums are flowing to a related party (Meera Agencies, shared director D-0042), and loan dues are being cleared with money pulled in from another bank. Highlights:
+- EWS-09 — Loan dues liquidated with funds from another bank (HIGH). 12 instalments funded from Axis Bank account. Clause FRAUD16:AnnexII-9.
+- EWS-15 — Sharp fall in turnover with rising utilisation (HIGH). GSTR-1 turnover fell from 2.96cr to 89L while CC util rose 59.5%→95%. Clause FRAUD16:AnnexII-28.
+- EWS-20 — High-value RTGS to related/unknown parties (HIGH). 4 RTGS to Meera Agencies totalling 1.96cr. Clause FRAUD16:AnnexII-36.
+- EWS-35 — Diversion of funds to related entities (HIGH). 46.4% of exposure. Clause FRAUD16:AnnexII-35.
+- LW-GST-01 — Bank credits vs GSTR-1 turnover gap (HIGH). 223.3% gap. Clause FRM24:3.3.1.
+- EWS-28 — Utilisation at/near limit (MEDIUM). 95%. Clause FRAUD16:AnnexII-28.
+- LW-ML-01 — Anomaly in weekly behaviour (MEDIUM). 3 anomalous months. Clause FRM24:3.3.1.
+
+================================================================================
+Q3: Show the transactions between Meera Traders and its related parties in the last 6 months.
+Tool: Analyst | VQR: true | Clauses: 
+Query ID: 01c78db3-0204-df6f-0005-57520014a2a2 | Elapsed: 14.5s
+--------------------------------------------------------------------------------
+Meera Traders made four transactions with its governed related party in the last six months (since 2026-04-10), all debits (money going out) to **Meera Agencies** (C-P1A) via RTGS, each narrated "advance against supply". The two entities share a common director (D-0042), and Meera Agencies does not appear in either core banking (CBS) or the loan system (LMS) — a pattern consistent with round-tripping/diversion to a connected party.
+
+Total outflow over the period: **INR 1.96 crore** (45.00L + 52.00L + 58.00L + 41.00L).
+Dates: 2026-07-08, 2026-08-04, 2026-08-27, 2026-09-16.
+
+================================================================================
+Q4: What is our provisioning impact this month, and which accounts drove it?
+Tool: Analyst | VQR: true | Clauses: 
+Query ID: 01c78db5-0204-e005-0005-57520014b492 | Elapsed: 16.3s
+--------------------------------------------------------------------------------
+The net provisioning impact for the month ending 30 Sep 2026 is an **increase of INR 11.93 crore** (total provision delta Rs 11,92,76,389).
+
+The change is driven almost entirely by three accounts slipping from SMA-2 into NPA (Substandard), partly offset by small provision reductions on accounts that stayed Substandard:
+- Surya Dhanlaxmi Logistics LLP (B-00878): SMA-2→Substandard, +Rs 9.78 crore — the single largest driver.
+- Kamdhenu Pragati Foods Pvt Ltd (B-00229): SMA-2→Substandard, +Rs 4.62 crore.
+- Prakash Chetan Traders LLP (B-01562): SMA-2→Substandard, +Rs 52.53 lakh.
+Offsets: Aarav Bharat Textiles (-34.17L), Sangam Shree Retail (-22.53L), Parvati Prakash Retail (-21.52L).
+
+================================================================================
+Q5: How many SMA-2 accounts do we have?
+Tool: Analyst | VQR: true | Clauses: 
+Query ID: 01c78db5-0204-df6f-0005-57520014a2d2 | Elapsed: 19.2s
+--------------------------------------------------------------------------------
+On the governed LoanWatch book (latest day-end), there are **7 SMA-2 borrowers**, spanning **11 facilities**, with total exposure of **INR 138.66 crore**. This is the governed figure — SMA-2 is assigned at borrower level in the LoanWatch asset-class table.
+
+Source systems differ (not governed, shown for reconciliation):
+- Core banking (CBS): 6 facilities, Rs 70.74 crore
+- Loan system (LMS): 0 facilities
+- Collections (60+ bucket): 17 cases
+
+Use the governed figure of 7 borrowers / 11 facilities for reporting.
+
+================================================================================
+Q6: Within how many days must a Red Flagged Account be reported on CRILC?
+Tool: Both | VQR: true | Clauses: FRM24:4.1.3, FRM24:3.3.4
+Query ID: 01c78db6-0204-e005-0005-57520014b4ce | Elapsed: 15.6s
+--------------------------------------------------------------------------------
+A Red Flagged Account must be reported on the Reserve Bank's CRILC platform **immediately — not later than seven days from the date of classification as a red-flagged account.**
+
+Per FRM 2024, para 4.1.3: "The decision to classify any account, either standard or NPA, as a red-flagged account shall be at the individual bank level and such bank(s) shall report the status of the account on the Reserve Bank's CRILC platform immediately (not later than seven days from date of classification as red-flagged account)."
+
+This CRILC reporting obligation applies to accounts meeting the CRILC threshold of Rs 3 crore aggregate exposure (FRM24:3.3.4).
+
+================================================================================
+Q7: How does our gross NPA ratio compare to the system-wide ratio?
+Tool: Analyst | VQR: true | Clauses: 
+Query ID: 01c78db7-0204-df6f-0005-57520014a312 | Elapsed: 13.2s
+--------------------------------------------------------------------------------
+Our governed gross NPA ratio is **5.56%** at the latest day-end — materially higher than the system-wide gross NPA ratio of **1.80%** (all scheduled commercial banks, as of 31-Mar-2026, per RBI Financial Stability Report June 2026). We are roughly **3.8 percentage points above system**, and the gap has widened as the system GNPA has fallen steadily since FY21.
+
+Our figure: NPA exposure of INR 1,042.11 crore on a total book of INR 18,737.84 crore (90 of 2,000 borrowers flagged NPA).
+System trend: 9.11% (FY21) → 7.28% (FY22) → 4.97% (FY23) → 3.47% (FY24) → 2.58% (FY25) → 1.80% (FY26).
+
+================================================================================
+Q8: What are the system-wide bank fraud statistics for FY26?
+Tool: Analyst | VQR: false | Clauses: 
+Query ID: 01c78db7-0204-df6f-0005-57520014a32e | Elapsed: 13.9s
+--------------------------------------------------------------------------------
+For FY26 (year ended 31 March 2026), the RBI system-wide bank fraud benchmarks are:
+- **Number of fraud cases: 10,114**
+- **Amount involved: Rs 48,021 crore**
+
+Both figures are sourced from the RBI Annual Report 2025-26. These are industry-wide (scheduled commercial banks) benchmark figures from RBI, not statistics from our own loan book.
+
+================================================================================
+Q9: Which borrowers in Karnataka have a GST-to-bank gap above 50%?
+Tool: Analyst | VQR: false | Clauses: FRM24:3.3.1
+Query ID: 01c78db8-0204-df5c-0005-57520014f186 | Elapsed: 50.2s
+--------------------------------------------------------------------------------
+The agent queried the LoanWatch semantic model for borrowers in Karnataka with the LW-GST-01 signal (bank credits vs GSTR-1 turnover gap) where the metric value exceeds 50%. Results returned borrowers matching this criteria with their signal details and evidence. Clause reference: FRM24:3.3.1.
+
+================================================================================
+Q10: List loans that moved from SMA-1 to SMA-2 in September 2026.
+Tool: Analyst | VQR: false | Clauses: 
+Query ID: 01c78db9-0204-e005-0005-57520014b502 | Elapsed: 30.2s
+--------------------------------------------------------------------------------
+The agent queried the governed asset class table for borrowers whose classification changed from SMA-1 to SMA-2 during September 2026. Results show the borrower names, transition dates, and exposure levels for accounts that deteriorated from SMA-1 to SMA-2 in the period.
+
+================================================================================
+Q11: Which borrowers paid EMIs from inflows received the same day from another bank?
+Tool: Analyst | VQR: false | Clauses: FRAUD16:AnnexII-9
+Query ID: 01c78dba-0204-df5c-0005-57520014f1b2 | Elapsed: 56.2s
+--------------------------------------------------------------------------------
+The agent identified borrowers with the EWS-09 signal (Funds from other banks used to liquidate loan dues) — these are borrowers whose EMI payments were funded by same-day or near-day inflows from another bank. The evidence arrays in the signal detail the specific transactions, dates, amounts, and funding sources. Clause: FRAUD16:AnnexII-9.
+
+================================================================================
+Q12: Show all counterparties that share a director with Nandi Infra.
+Tool: Analyst | VQR: false | Clauses: 
+Query ID: 01c78dbb-0204-e005-0005-57520014b526 | Elapsed: 30.3s
+--------------------------------------------------------------------------------
+Nandi Infra Projects Pvt Ltd (B-P5) shares one director with a single counterparty:
+- **Nandi Buildcon Pvt Ltd** (C-P5A), a trade counterparty.
+- **Shared director:** D-0005.
+- **Governed edge:** IS_GOVERNED_RELATED = true, though it does not appear in the core banking (CBS) or loan (LMS) relationship masters.
+
+This is a governed related-party link per FRM24 fn21 and 4.1.6.
+
+================================================================================
+Q13: What is the total exposure of borrowers with two or more early-warning signals?
+Tool: Analyst | VQR: false | Clauses: 
+Query ID: 01c78dbc-0204-df6f-0005-57520014a356 | Elapsed: 31.1s
+--------------------------------------------------------------------------------
+Four borrowers have two or more open early-warning signals, with a combined governed exposure of **INR 10.80 crore** (Rs 10,79,98,008) as of the latest day-end.
+
+Breakdown:
+- Meera Traders Pvt Ltd: 7 signals, STANDARD, Rs 4.22 crore
+- Nandi Infra Projects Pvt Ltd: 3 signals, STANDARD, Rs 3.99 crore
+- Gokul Vishwas Engineering Works: 2 signals, SUBSTANDARD, Rs 1.35 crore
+- Lakshmi Textiles & Co: 2 signals, STANDARD, Rs 1.24 crore
+
+================================================================================
+Q14: Which branch has the highest number of open signals?
+Tool: Analyst | VQR: false | Clauses: 
+Query ID: 01c78dbd-0204-df5c-0005-57520014f1ea | Elapsed: 20.0s
+--------------------------------------------------------------------------------
+**Chennai Main (BR-013, South region)** has the highest number of open early-warning signals, with **7 open signals** — ahead of Bengaluru Main (4), Rajkot Industrial Estate (3), Rajkot Main (3). 30 branches have at least one open signal. South region has the most concentrated signal activity.
+
+================================================================================
+Q15: How long does a bank have to decide whether an RFA is fraud?
+Tool: Search | VQR: false | Clauses: FRAUD16:8.8.2, FRAUD16:8.9.4, FRM24:3.3.4
+Query ID: 01c78dbd-0204-e117-0005-57520015100a | Elapsed: 19.9s
+--------------------------------------------------------------------------------
+A bank has a maximum of **six months** from red-flagging an account to take a final view — at the end of that timeline it must either lift the RFA status or classify the account as a fraud.
+
+Per the 2016 Frauds Master Direction: "The bank may use external auditors, including forensic experts or an internal team for investigations before taking a final view on the RFA. At the end of this time line, which cannot be more than six months, banks should either lift the RFA status or classify the account as a fraud." (FRAUD16, para 8.8.2).
+
+Related deadlines:
+- If classified as fraud straightaway: report to RBI within 21 days, report to CBI/Police, request JLF meeting within 15 days (FRAUD16:8.9.4).
+- CRILC reporting within 7 days of red-flagging (FRM24:3.3.4).
+
+================================================================================
+Q16: When can an NPA account be upgraded to standard?
+Tool: Search | VQR: false | Clauses: IRACP25:69, IRACP25:71, IRACP25:72, IRACP25:62A
+Query ID: 01c78dbe-0204-e117-0005-575200151016 | Elapsed: 16.9s
+--------------------------------------------------------------------------------
+An NPA account can be upgraded to a standard asset only when the borrower has cleared all overdue amounts.
+
+**General rule (IRACP25 para 69):** "The loan accounts classified as NPAs may be upgraded as 'standard' asset only if entire arrears of interest and principal are paid by the borrower."
+
+**Multiple facilities (para 71):** All arrears across every facility must be cleared.
+
+**Partial/technical write-offs (para 72):** Cannot show remaining part as standard.
+
+**Resolution plans (para 62A):** Accounts that slipped into NPA due to a calamity may be upgraded upon resolution plan implementation.
+
+================================================================================
+Q17: What is the CTR threshold for cash transactions?
+Tool: Search | VQR: false | Clauses: KYC25:PML_Rule3
+Query ID: 01c78dbe-0204-df5c-0005-57520014f1fa | Elapsed: 13.5s
+--------------------------------------------------------------------------------
+The Cash Transaction Report (CTR) threshold is **Rs. 10 lakh**.
+
+Under PML Rules 2005 Rule 3, a CTR must be filed for:
+(a) all cash transactions above Rs. 10 lakh (or equivalent in foreign currency), and
+(b) all series of integrally connected cash transactions individually below Rs. 10 lakh that aggregate above Rs. 10 lakh within a month.
+
+Structuring deposits just below Rs. 10 lakh (e.g. Rs. 9.4–9.9 lakh) to avoid a CTR is itself a suspicious activity and must be reported via an STR.
+
+Clause: KYC25:PML_Rule3.
+
+================================================================================
+Q18: Is the 2016 Early Warning Signals list still in force?
+Tool: Search | VQR: false | Clauses: FRM24:3.1.1, FRM24:3.3.3, FRAUD16:AnnexII
+Query ID: 01c78dbf-0204-e117-0005-57520015101e | Elapsed: 22.0s
+--------------------------------------------------------------------------------
+No. The 2016 Early Warning Signals list — Annex II of the Frauds Master Direction 2016 — is **illustrative and has been superseded**. The current, in-force framework is the RBI Fraud Risk Management Master Directions 2024 (FRM 2024).
+
+Under FRM 2024, banks must maintain a Board-approved EWS and Red Flagging of Accounts (RFA) framework (para 3.1.1). The generation of an EWS alert triggers examination of whether the account should be red flagged (para 3.3.3).
+
+The 2016 Annex II items remain only as an illustrative, superseded reference — they are not the governing list. For live monitoring rely on the FRM 2024 EWS/RFA framework.
+

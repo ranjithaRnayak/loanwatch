@@ -1,15 +1,130 @@
-# PROMPTS.md — LoanWatch Prompt Log
+# PROMPTS.md — LoanWatch CoCo Prompt Log
+
+Every prompt given to CoCo during the build, with what it produced. Amogh ran the platform and engine prompts in the Snowsight CoCo chat; Rohan drove governance, verification and hardening sessions in Snowsight CoCo using a reusable master prompt (Part C, full text in docs/MASTER_PROMPT_rohan.md); Ranjitha ran the knowledge layer, agent, app and packaging prompts in CoCo CLI. Outcomes were verified against the deployed objects.
 
 | Metric | Value |
 |--------|-------|
-| Total prompts | 22 |
+| Total prompts | 41 (18 Amogh, 1 master prompt reused across sessions by Rohan, 22 Ranjitha) |
 | Snowflake objects | 46 tables, 4 dynamic tables, 16 views, 1 semantic view, 1 agent, 1 Cortex Search service, 8 procedures, 5 tasks, 2 stages, 1 Streamlit app, 7 masking policies, 2 row-access policies, 3 roles |
 | Skills used | cortex-ai-function-studio, agent-studio, developing-with-streamlit-in-snowflake |
 | E2E checks passing | 13 / 13 |
 
 ---
 
-## Prompt 1: Regulatory Document Search Pipeline
+## Part A: Platform, data and engine (Amogh, Snowsight CoCo chat)
+
+## Prompt 1: sql/00_setup.sql
+
+**Prompt:**
+Create database LOANWATCH with schemas RAW/CORE/REF/OUT/APP, warehouses LW_XS and LW_APP_XS, resource monitor, roles LW_ANALYST/COMPLIANCE/PRINCIPAL_OFFICER/JUDGE, grants, and internal stage REG_STAGE.
+
+**Outcome:**
+All objects created. Verified with SHOW commands.
+
+## Prompts 2–7: sql/10-15 (data generation)
+
+**Prompt:**
+Generate synthetic data for 2,000 borrowers, 3,000 loans, 300K transactions, 96K GST filings. Plant 8 personas (B-P1 through B-P8). Inject DPD/overdue/related-party conflicts across 3 source systems for ~15% of accounts.
+
+**Outcome:**
+21 RAW tables populated. All persona patterns verified.
+
+## Prompt 8: Reference tables
+
+**Prompt:**
+Load EWS_INDICATORS, IRAC_RULES, PROVISION_RATES, REG_DOCS, DEFINITIONS_GLOSSARY into REF schema.
+
+**Outcome:**
+Tables created and populated.
+
+## Prompt 9: Core engine
+
+**Prompt:**
+Create dynamic tables LOAN_DPD_DAILY, ASSET_CLASS_DAILY, BORROWER_MONTHLY, RELATED_PARTY_EDGES. Create EWS views and SP_RUN_SIGNALS. Train anomaly model.
+
+**Outcome:**
+Dynamic tables refreshing. 215 signals generated. P1 (Meera Traders) fires 7 signals, P3 (Kaveri Foods) fires 0.
+
+## Prompt 10: Task DAG
+
+**Prompt:**
+Create task graph T_LW_DAYEND_ROOT (nightly 23:30 IST) → T_LW_REFRESH_CORE → T_LW_ML_SCORE → T_LW_RUN_SIGNALS → T_LW_DAYEND_FINALIZE.
+
+**Outcome:**
+DAG created, root suspended by default.
+
+## Prompt 11: Knowledge layer
+
+**Prompt:**
+PUT RBI PDFs to @REF.REG_STAGE, parse with AI_PARSE_DOCUMENT, build REG_CHUNKS and Cortex Search service REG_SEARCH.
+
+**Outcome:**
+4 PDFs parsed (IRACP25, FRM24, FRAUD2016, FIUIND). Search service active.
+
+## Prompt 12: Semantic view
+
+**Prompt:**
+Create APP.LOANWATCH_SV with 15 tables, 11 metrics, 6 verified queries, governed-DPD instructions.
+
+**Outcome:**
+Semantic view created and tested.
+
+## Prompt 13: Governance
+
+**Prompt:**
+Create masking policies (PAN, GSTIN, account no, DIN, DOB, person name, borrower name), row-access policies (region, STR principal-officer-only), GOV schema with entitlements.
+
+**Outcome:**
+7 masking + 2 row-access policies. JUDGE role sees PAN masked.
+
+## Prompt 14: Generator procedures
+
+**Prompt:**
+Create SP_CREATE_FINDING, SP_RFA_NOTE, SP_PROVISIONING_RETURN, SP_STR_DRAFT with AI_COMPLETE templates, AI_CLASSIFY for grounds of suspicion, AUDIT_LOG writes.
+
+**Outcome:**
+4 procedures created and tested.
+
+## Prompt 15: Cortex Agent
+
+**Prompt:**
+Create APP.LOANWATCH_AGENT with Analyst (semantic view), Search (REG_SEARCH), 4 procedure tools, data_to_chart. Instructions for routing, citation, and draft-only policy.
+
+**Outcome:**
+Agent created with 7 tools and 8 sample questions.
+
+
+### Hardening pass
+
+## Prompt 16: EWS_INDICATORS completion
+
+**Prompt:**
+Fill remaining EWS indicators from 2016 Fraud MD Annex II (items 1a, 2-8, 10, 12-14, 16-19, 21-27, 29-34, 37-42) with IS_COMPUTABLE=FALSE for non-detectable indicators.
+
+**Outcome:**
+Table went from 12 to 47 rows (43 Annex II + 4 LoanWatch custom). 12 computable, 35 reference-only.
+
+## Prompt 17: Knowledge layer fix — RSA25 and KYC25 chunks
+
+**Prompt:**
+Re-insert RSA25 (SMA classification, CRILC threshold, definitions) and KYC25 (CTR threshold, STR filing, no tipping off) chunks into REG_CHUNKS using new schema columns. Force refresh search service.
+
+**Outcome:**
+17 chunks inserted. Verified: CTR query → KYC25:PML_Rule3, CRILC query → RSA25:17, SMA-2 query → RSA25:15.
+
+## Prompt 18: Judge users and packaging
+
+**Prompt:**
+Create JUDGE1/JUDGE2 users, sql/99_e2e.sql, AGENTS.md, PROMPTS.md, README.md, CoCo skills.
+
+**Outcome:**
+Judge users exist (created by teammate). Files written.
+
+
+---
+## Part B: Knowledge layer, agent, app and packaging (Ranjitha, CoCo CLI)
+
+## Prompt 19: Regulatory Document Search Pipeline
 
 **Prompt:**
 Parse every PDF in @LOANWATCH.REF.REG_STAGE with AI_PARSE_DOCUMENT in LAYOUT mode. Split the output into paragraph chunks and store them in LOANWATCH.REF.REG_CHUNKS with columns DOC_ID, PARA_REF, PAGE, CHUNK_TEXT. Create Cortex Search service LOANWATCH.REF.REG_SEARCH on CHUNK_TEXT with DOC_ID and PARA_REF as attributes, warehouse LW_XS, target lag 1 day. Save all SQL as sql/20_reg_search.sql. Test with the query "within how many days must a Red Flagged Account be reported on CRILC" and show the top 3 results with DOC_ID and PARA_REF.
@@ -29,7 +144,7 @@ Parse every PDF in @LOANWATCH.REF.REG_STAGE with AI_PARSE_DOCUMENT in LAYOUT mod
 | 2    | FRM2024 | 3.3.4    | "...once red flagged, shall be reported to the Reserve Bank **within seven days**..." |
 | 3    | FRM2024 | 4.1.3    | "...shall report the status...on CRILC platform immediately (**not later than seven days**)..." |
 
-## Prompt 2: Regex Fix During PDF Parsing
+## Prompt 20: Regex Fix During PDF Parsing
 
 **Prompt:**
 The PARA_REF regex failed with "invalid regular expression" — `(?:\.)` is not supported in Snowflake. Fix the regex so paragraph numbers like `4.1.5` are extracted correctly.
@@ -38,7 +153,7 @@ The PARA_REF regex failed with "invalid regular expression" — `(?:\.)` is not 
 - Changed regex from `(?:\.)` to `(\\.[0-9]+)` with double-backslash escaping for Snowflake's `REGEXP_SUBSTR`.
 - REG_CHUNKS rebuilt successfully with correct PARA_REF values.
 
-## Prompt 3: Cortex Agent Creation
+## Prompt 21: Cortex Agent Creation
 
 
 **Prompt:**
@@ -67,7 +182,7 @@ Create Cortex Agent LOANWATCH.APP.LOANWATCH_AGENT with Cortex Analyst over LOANW
 | 7 | SP_CREATE_FINDING('B-P1') + SP_RFA_NOTE | Finding FND-B-P1-20260930 (RFA_RECOMMENDED, CRILC due 07-Oct). |
 | 8 | SP_STR_DRAFT('B-P4') | STR-B-P4-20260930 — 11 cash deposits totalling ₹1.06Cr, structuring below CTR threshold. |
 
-## Prompt 4: Agent Recreation Attempts (Stored Procedure Tools)
+## Prompt 22: Agent Recreation Attempts (Stored Procedure Tools)
 
 
 **Prompt:**
@@ -77,7 +192,7 @@ The agent's tool_resources failed to parse for stored procedures. Recreate with 
 - Tried 4 different YAML spec formats for `generic` tool_resources. All failed with "generic tool resources is nil" or "empty type/execution environment".
 - Kept agent with 2 tools (Analyst + Search). SPs called directly from Streamlit instead.
 
-## Prompt 5: Streamlit UI
+## Prompt 23: Streamlit UI
 
 
 **Prompt:**
@@ -88,7 +203,7 @@ Create a Streamlit in Snowflake app LOANWATCH.APP.LOANWATCH_UI on warehouse LW_A
 - Deployed to `LOANWATCH.APP.LOANWATCH_UI` on warehouse `LW_APP_XS`.
 - SQL saved to `sql/40_streamlit.sql`.
 
-## Prompt 6: st.Page / Streamlit 1.35 Fix
+## Prompt 24: st.Page / Streamlit 1.35 Fix
 
 
 **Prompt:**
@@ -98,7 +213,7 @@ The app fails with "module streamlit has no attribute Page". Fix by removing st.
 - Removed `st.Page` and `st.navigation` calls. Switched to `pages/` folder auto-discovery (the classic Streamlit MPA pattern).
 - App loads successfully on streamlit 1.35.0.
 
-## Prompt 7: Chat parent_message_id Fix
+## Prompt 25: Chat parent_message_id Fix
 
 
 **Prompt:**
@@ -109,7 +224,7 @@ The Chat page returns "parent_message_id cannot be null". Fix using exactly the 
 - Each question is a fresh stateless call: `DATA_AGENT_RUN(fqn, single-message-payload, TRUE)`.
 - Chat history displayed via `st.session_state` but NOT sent to the agent.
 
-## Prompt 8: System Benchmarks and NPA Comparison
+## Prompt 26: System Benchmarks and NPA Comparison
 
 
 **Prompt:**
@@ -121,7 +236,7 @@ Create REF.SYSTEM_BENCHMARKS (AS_OF_DATE, METRIC, VALUE, UNIT, SOURCE) and inser
 - Added VQR `Q7_NPA_VS_SYSTEM`. Initial VQR used physical column `"VALUE"` which Cortex Analyst excluded from the CTE; fixed to use logical name `BENCHMARK_VALUE`.
 - Agent answer: our GNPA 5.56% vs system 1.80% — ~3x the industry average.
 
-## Prompt 9: Sample Questions Page
+## Prompt 27: Sample Questions Page
 
 
 **Prompt:**
@@ -132,7 +247,7 @@ Does app/pages/0_Sample_Questions.py exist and is it on the stage? If not, build
 - All questions tested through the agent — all returned content.
 - Provenance line shows which tools were used (Analyst / Search) with citations.
 
-## Prompt 10: Streamlit UI Overhaul — Judge-Ready Polish
+## Prompt 28: Streamlit UI Overhaul — Judge-Ready Polish
 
 
 **Prompt:**
@@ -143,7 +258,7 @@ Improve the LoanWatch Streamlit app so a Snowflake judge can see the Snowflake f
 - Fixed ROOT_LOCATION: Streamlit was pointing at `app_v2/`; recreated to point at `app/`.
 - Sidebar on every page lists all Snowflake features in use.
 
-## Prompt 11: Judge Access Role and Evaluator Users
+## Prompt 29: Judge Access Role and Evaluator Users
 
 
 **Prompt:**
@@ -154,7 +269,7 @@ Create role LW_JUDGE with read-only access to all LoanWatch objects. Create user
 - Created both users with generated passwords (communicated once).
 - SQL saved to `sql/50_judge_access.sql` (passwords excluded).
 
-## Prompt 12: Overview Rename and Metric Formatting
+## Prompt 30: Overview Rename and Metric Formatting
 
 
 **Prompt:**
@@ -165,17 +280,17 @@ Rename app/streamlit_app.py to app/Overview.py, update sql/40_streamlit.sql so t
 - Metrics now display as `₹18,738 Cr` and `₹229 Cr` (integer, thousands-separated).
 - `sql/40_streamlit.sql` updated.
 
-## Prompt 13: Visual Polish Pass
+## Prompt 31: Visual Polish Pass
 
 
 **Prompt:**
-Visual polish, no functional changes: (1) header band on every page with navy #0B1F3A background; (2) metric cards with teal #1EBEA5 left accent; (3) SMA table Governed row highlighted with pandas Styler; (4) icon prefixes on section headers; (5) severity pills in Signals (HIGH red, MEDIUM amber, LOW grey); (6) chat_message wrappers and â„ provenance prefix; (7) monospace clause refs.
+Visual polish, no functional changes: (1) header band on every page with navy #0B1F3A background; (2) metric cards with teal #1EBEA5 left accent; (3) SMA table Governed row highlighted with pandas Styler; (4) icon prefixes on section headers; (5) severity pills in Signals (HIGH red, MEDIUM amber, LOW grey); (6) chat_message wrappers and snowflake-icon provenance prefix; (7) monospace clause refs.
 
 **Outcome:**
 - Applied all 7 visual changes across all 7 files.
 - Uploaded and recreated Streamlit. All pages load.
 
-## Prompt 14: Overview Captions and Card Heights
+## Prompt 32: Overview Captions and Card Heights
 
 
 **Prompt:**
@@ -185,7 +300,7 @@ Three changes on Overview: (1) caption above SMA table: "Question: how many acco
 - Added question caption above and explanatory caption below the SMA-2 table.
 - Added status lines to Total exposure and Provision required cards.
 
-## Prompt 15: Signals Clause-Ref Fix
+## Prompt 33: Signals Clause-Ref Fix
 
 
 **Prompt:**
@@ -196,7 +311,7 @@ Clause refs like "FRAUD16:AnnexII-1(b)" render a stray "(b)" block because markd
 - Switched from markdown `**bold**` to HTML `<b>` tags in the signal card loop.
 - Clause refs now render as a single inline `<code>` pill without splitting.
 
-## Prompt 16: E2E Test, REBUILD.md, and README Rewrite
+## Prompt 34: E2E Test, REBUILD.md, and README Rewrite
 
 
 **Prompt:**
@@ -209,7 +324,7 @@ Write sql/99_e2e.sql that runs SP_RUN_SIGNALS, calls the agent for the 8 demo qu
 - `README.md`: all requested sections including mermaid architecture diagram.
 - `docs/sample_questions.md`: 18 questions in 3 categories.
 
-## Prompt 17: Task DAG Run
+## Prompt 35: Task DAG Run
 
 
 **Prompt:**
@@ -221,7 +336,7 @@ Resume the task DAG T_LW_DAYEND_ROOT, execute it once manually, confirm all five
 - Root suspended again.
 - Overview page now shows "Last day-end run completed: {timestamp}" from TASK_HISTORY.
 
-## Prompt 18: Maker-Checker Workflow
+## Prompt 36: Maker-Checker Workflow
 
 
 **Prompt:**
@@ -234,7 +349,7 @@ Add a STATUS workflow to OUT.RFA_NOTES and OUT.STR_DRAFTS: DRAFT, SUBMITTED, APP
 - Created `SP_APPROVE_NOTE(note_type, note_id, action)`: enforces `CURRENT_ROLE() = 'LW_PRINCIPAL_OFFICER'`, SUBMITTED → APPROVED/REJECTED with timestamp, logs to AUDIT_LOG.
 - Actions page updated with coloured status badges (DRAFT grey, SUBMITTED blue, APPROVED teal, REJECTED red), Submit/Approve/Reject buttons, and PO-only enforcement.
 
-## Prompt 19: Status Check — Slide Deck Numbers
+## Prompt 37: Status Check — Slide Deck Numbers
 
 
 **Prompt:**
@@ -248,7 +363,7 @@ Read-only check: run SMA-2 reconciliation, Meera Traders signals, provisioning d
 - Tiles: ₹18,738 Cr exposure, 52 signals, 1 RFA candidate, ₹229 Cr provision.
 - REF: 641 REG_CHUNKS, 8 SYSTEM_BENCHMARKS.
 
-## Prompt 20: Agent Regulatory Search Test
+## Prompt 38: Agent Regulatory Search Test
 
 
 **Prompt:**
@@ -259,7 +374,7 @@ Read-only: Show REG_CHUNKS grouped by DOC_ID. Test "When can an NPA account be u
 - NPA upgrade: agent cited IRACP25 paras 69, 71, 62A, 72 — full repayment of all arrears required across all facilities.
 - 2016 EWS list: agent correctly answered **No** — the fixed 44-item list is illustrative and superseded by FRM 2024, where banks design their own RMCB-approved indicators. Cited FRM24:3.1.1, 3.1.3, 3.3.1, FRAUD16:AnnexII-25.
 
-## Prompt 21: Skills Used
+## Prompt 39: Skills Used
 
 
 **Prompt:**
@@ -270,7 +385,7 @@ Three CoCo skills were loaded during the build sessions to get authoritative, up
 - **agent-studio**: loaded when creating the Cortex Agent. Provided YAML specification format for tools and tool_resources, and the `execution_environment` block required for the Analyst tool.
 - **developing-with-streamlit-in-snowflake**: loaded when building the Streamlit app. Confirmed warehouse runtime constraints (streamlit ≤ 1.35.0, no st.Page/st.navigation).
 
-## Prompt 22: Complete Prompt Log
+## Prompt 40: Complete Prompt Log
 
 
 **Prompt:**
@@ -279,3 +394,20 @@ Review every session and append all missing prompts to PROMPTS.md in the establi
 **Outcome:**
 - Expanded from 5 entries to 22 entries covering every prompt from the project.
 - Added summary table: 22 prompts, 13/13 e2e checks, object counts by type.
+
+---
+## Part C: Governance, verification and hardening (Rohan, Snowsight CoCo chat)
+
+Rohan worked with one reusable master prompt pasted at the start of every session, rather than ad-hoc prompts. It fixes the agent's role, non-negotiable working rules (inspect before changing, idempotent SQL, never claim success without a result, no credentials in source), the script conventions, synthetic-data and regulatory rules, governance requirements, test and acceptance criteria, the recorded state, and the prioritised next-actions list. Full text: `docs/MASTER_PROMPT_rohan.md`.
+
+## Prompt 41: Master build prompt (reused per session)
+
+**Prompt:**
+"You are an implementation-focused senior Snowflake, SQL, Streamlit, data-governance and applied-AI engineer working with the team on LoanWatch. Continue from the existing repository and Snowflake objects. Inspect before changing; make small, idempotent, rerunnable changes; never claim a command, deployment or test succeeded unless its result confirms it; do not expose credentials; be mindful of compute, AI-call and Cortex Search cost. [Followed by product objective, architecture conventions, persona and regulatory rules, governance requirements, acceptance criteria, current state and the prioritised remaining-work list.]" See `docs/MASTER_PROMPT_rohan.md`.
+
+**Outcome (across sessions):**
+- Governance: 7 masking policies (PAN, GSTIN, account number, DIN, DOB, person name, borrower name), 2 row-access policies (region; STR visible to Principal Officer only), `GOV` schema with `BORROWER_REGION`, `ROLE_ENTITLEMENTS`, `FN_CAN_VIEW_PII`, `FN_CAN_VIEW_STR`; governance tests passed for the judge role (PII masked, STR drafts inaccessible, regional scope 1,091 of 2,000 borrowers).
+- Regulatory corpus verification: clause references checked against parsed source paragraphs; gaps for the Resolution of Stressed Assets Directions 2025 and PMLA rules recorded rather than marked verified, later closed by adding RSA25 and KYC25 chunks.
+- End-to-end suite: `OUT.E2E_RESULTS` and `OUT.E2E_AGENT_RAW` populated; 38 checks passed before later app work, re-run later as `sql/99_e2e.sql` (13/13).
+- Judge users `JUDGE1`/`JUDGE2` with `LW_JUDGE` defaults, passwords kept out of source and chat.
+- Recorded state and next-actions list used by the other two team members to pick up work without rebuilding.
